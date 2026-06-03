@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>MUNDIAL 2026</title>
+  <title>La polla del loquito 2026</title>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
 <header>
-  <h1>🏆 COPA DEL MUNDO 2026</h1>
+  <h1>🏆 La polla del loquito 2026</h1>
   <p>LA GRAN POLLA.</p>
 </header>
 
@@ -52,7 +52,7 @@
     <div id="nextMatchBox" class="nextHero compact"></div>
     <div class="adminOnly card">
       <h3>⚡ Carga rápida</h3>
-      <p>104 PARTIDOS.</p>
+      <p>Carga/actualiza los 104 partidos del calendario. No borra participantes ni apuestas.</p>
       <button id="seedScheduleBtn" class="primary">Cargar calendario oficial 2026</button>
     </div>
     <div class="filters">
@@ -190,7 +190,7 @@
 
 <section id="view-selecciones" class="view">
     <h2>Selecciones</h2>
-    <p>DATOS MUNDIALEROS.</p>
+    <p>Datos ligeros para darle chiminuchina sin hacer pesada la página.</p>
     <div id="teamsGrid" class="teamsGrid"></div>
   </section>
 
@@ -217,7 +217,24 @@
       </div>
     </div>
 
-    <div class="card">
+    
+<div class="adminOnly card dangerZone">
+  <h3>🧹 Panel de limpieza</h3>
+  <p>Para limpiar datos de prueba, escribe <strong>RESET</strong> y elige una acción.</p>
+  <div class="formline">
+    <input id="resetConfirmInput" placeholder="Escribe RESET para confirmar"/>
+  </div>
+  <div class="cleanupGrid">
+    <button id="clearPredictionsBtn" class="danger">Borrar apuestas</button>
+    <button id="clearParticipantsBtn" class="danger">Borrar participantes</button>
+    <button id="clearResultsBtn" class="danger">Limpiar resultados</button>
+    <button id="clearParticipantsPredictionsBtn" class="danger">Borrar participantes + apuestas</button>
+    <button id="resetTestDataBtn" class="danger strongDanger">Reset pruebas</button>
+  </div>
+  <p class="muted">Reset pruebas borra participantes, apuestas y resultados, pero mantiene el calendario.</p>
+</div>
+
+<div class="card">
       <h3>Reglas de puntaje</h3>
       <p>Exacto: 3 puntos · Resultado acertado: 1 punto · Nada: 0 puntos.</p>
     </div>
@@ -228,6 +245,6 @@
   <small>Horarios en Chile · Fechas ajustadas a America/Santiago.</small>
 </footer>
 
-<script type="module" src="app.js?v=22"></script>
+<script type="module" src="app.js?v=23"></script>
 </body>
 </html>

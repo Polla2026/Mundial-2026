@@ -58,7 +58,7 @@ const TEAM_FACTS = {
   "Mexico": {titles:0, star:"Santiago Giménez", best:"Cuartos de final", fact:"Anfitrión: abre el Mundial 2026 en Ciudad de México."},
   "Morocco": {titles:0, star:"Achraf Hakimi", best:"Semifinales (2022)", fact:"Primera selección africana en llegar a semifinales."},
   "Netherlands": {titles:0, star:"Virgil van Dijk", best:"Subcampeón (3 veces)", fact:"Histórica selección europea que aún busca su primer Mundial."},
-  "New Zealand": {titles:0, star:"Tim Payne", best:"Fase de grupos", fact:"Representante oceánico de gran disciplina competitiva."},
+  "New Zealand": {titles:0, star:"Chris Wood", best:"Fase de grupos", fact:"Representante oceánico de gran disciplina competitiva."},
   "Norway": {titles:0, star:"Erling Haaland", best:"Octavos de final", fact:"Regresa con una generación ofensiva muy potente."},
   "Panama": {titles:0, star:"Adalberto Carrasquilla", best:"Fase de grupos (2018)", fact:"Segunda etapa mundialista para una selección en crecimiento."},
   "Paraguay": {titles:0, star:"Miguel Almirón", best:"Cuartos de final (2010)", fact:"Selección sudamericana históricamente difícil de enfrentar."},
@@ -831,6 +831,56 @@ async function importPredictionsFromRows(rows){
   return {imported, skipped};
 }
 
+
+function requireResetConfirmation(actionName){
+  const value = $("resetConfirmInput")?.value.trim();
+  if(value !== "RESET"){
+    alert("Para confirmar, escribe RESET en el campo del panel de limpieza.");
+    return false;
+  }
+  return confirm(`⚠️ Acción irreversible: ${actionName}. ¿Continuar?`);
+}
+async function deleteCollectionDocs(collectionName){
+  const items = collectionName === "participants" ? participants : collectionName === "predictions" ? predictions : [];
+  await Promise.all(items.map(item => deleteDoc(doc(db, collectionName, item.id))));
+  return items.length;
+}
+async function clearPredictions(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("borrar todas las apuestas")) return;
+  const n = await deleteCollectionDocs("predictions");
+  alert(`Apuestas borradas: ${n}`);
+}
+async function clearParticipants(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("borrar todos los participantes")) return;
+  const n = await deleteCollectionDocs("participants");
+  alert(`Participantes borrados: ${n}`);
+}
+async function clearResults(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("limpiar todos los resultados reales")) return;
+  const played = matches.filter(m => m.realA !== "" || m.realB !== "");
+  await Promise.all(matches.map(m => updateDoc(doc(db,"matches",m.id), {realA:"", realB:""})));
+  alert(`Resultados limpiados: ${played.length}`);
+}
+async function clearParticipantsAndPredictions(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("borrar participantes y apuestas")) return;
+  const p = await deleteCollectionDocs("predictions");
+  const u = await deleteCollectionDocs("participants");
+  alert(`Listo ✅\nApuestas borradas: ${p}\nParticipantes borrados: ${u}`);
+}
+async function resetTestData(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("RESET DE PRUEBAS")) return;
+  const p = await deleteCollectionDocs("predictions");
+  const u = await deleteCollectionDocs("participants");
+  const played = matches.filter(m => m.realA !== "" || m.realB !== "");
+  await Promise.all(matches.map(m => updateDoc(doc(db,"matches",m.id), {realA:"", realB:""})));
+  alert(`Reset listo ✅\nApuestas borradas: ${p}\nParticipantes borrados: ${u}\nResultados limpiados: ${played.length}`);
+}
+
 document.querySelectorAll("nav button").forEach(btn => {
   btn.addEventListener("click", () => {
     
@@ -1223,6 +1273,56 @@ async function importPredictionsFromRows(rows){
   return {imported, skipped};
 }
 
+
+function requireResetConfirmation(actionName){
+  const value = $("resetConfirmInput")?.value.trim();
+  if(value !== "RESET"){
+    alert("Para confirmar, escribe RESET en el campo del panel de limpieza.");
+    return false;
+  }
+  return confirm(`⚠️ Acción irreversible: ${actionName}. ¿Continuar?`);
+}
+async function deleteCollectionDocs(collectionName){
+  const items = collectionName === "participants" ? participants : collectionName === "predictions" ? predictions : [];
+  await Promise.all(items.map(item => deleteDoc(doc(db, collectionName, item.id))));
+  return items.length;
+}
+async function clearPredictions(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("borrar todas las apuestas")) return;
+  const n = await deleteCollectionDocs("predictions");
+  alert(`Apuestas borradas: ${n}`);
+}
+async function clearParticipants(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("borrar todos los participantes")) return;
+  const n = await deleteCollectionDocs("participants");
+  alert(`Participantes borrados: ${n}`);
+}
+async function clearResults(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("limpiar todos los resultados reales")) return;
+  const played = matches.filter(m => m.realA !== "" || m.realB !== "");
+  await Promise.all(matches.map(m => updateDoc(doc(db,"matches",m.id), {realA:"", realB:""})));
+  alert(`Resultados limpiados: ${played.length}`);
+}
+async function clearParticipantsAndPredictions(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("borrar participantes y apuestas")) return;
+  const p = await deleteCollectionDocs("predictions");
+  const u = await deleteCollectionDocs("participants");
+  alert(`Listo ✅\nApuestas borradas: ${p}\nParticipantes borrados: ${u}`);
+}
+async function resetTestData(){
+  if(!isAdmin) return alert("Solo admin.");
+  if(!requireResetConfirmation("RESET DE PRUEBAS")) return;
+  const p = await deleteCollectionDocs("predictions");
+  const u = await deleteCollectionDocs("participants");
+  const played = matches.filter(m => m.realA !== "" || m.realB !== "");
+  await Promise.all(matches.map(m => updateDoc(doc(db,"matches",m.id), {realA:"", realB:""})));
+  alert(`Reset listo ✅\nApuestas borradas: ${p}\nParticipantes borrados: ${u}\nResultados limpiados: ${played.length}`);
+}
+
 document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
     document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
     btn.classList.add("active");
@@ -1328,6 +1428,13 @@ $("importPredCsvBtn")?.addEventListener("click", async () => {
   }
 });
 
+
+
+$("clearPredictionsBtn")?.addEventListener("click", clearPredictions);
+$("clearParticipantsBtn")?.addEventListener("click", clearParticipants);
+$("clearResultsBtn")?.addEventListener("click", clearResults);
+$("clearParticipantsPredictionsBtn")?.addEventListener("click", clearParticipantsAndPredictions);
+$("resetTestDataBtn")?.addEventListener("click", resetTestData);
 
 onAuthStateChanged(auth, user => {
   isAdmin = !!user && user.email === ADMIN_EMAIL;
