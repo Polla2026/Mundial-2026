@@ -907,8 +907,27 @@ function fillPrizeInputs(){
 }
 async function savePrizeSettings(){
  if(!isAdmin) return alert("Solo admin.");
- await setDoc(doc(db,"settings","prizes"),{entryFee:Number($("entryFeeInput")?.value||0),manualPool:$("manualPoolInput")?.value===""?"":Number($("manualPoolInput")?.value||0),firstPct:Number($("firstPctInput")?.value||0),secondPct:Number($("secondPctInput")?.value||0),thirdPct:Number($("thirdPctInput")?.value||0),updatedAt:serverTimestamp()});
- alert("Premios guardados ✅");
+ const payload = {
+   entryFee:Number($("entryFeeInput")?.value||0),
+   manualPool:$("manualPoolInput")?.value===""?"":Number($("manualPoolInput")?.value||0),
+   firstPct:Number($("firstPctInput")?.value||0),
+   secondPct:Number($("secondPctInput")?.value||0),
+   thirdPct:Number($("thirdPctInput")?.value||0),
+   updatedAt:serverTimestamp()
+ };
+
+ // Actualiza inmediatamente la pantalla, incluso antes de que Firebase responda.
+ prizeSettings = {...prizeSettings, ...payload};
+ renderPrizeStats();
+ fillPrizeInputs();
+
+ try{
+   await setDoc(doc(db,"settings","prizes"), payload);
+   alert("Premios guardados ✅");
+ }catch(e){
+   console.error(e);
+   alert("No se pudieron guardar los premios en Firebase. Revisa que Firestore Rules tenga permisos para /settings. La vista se actualizó temporalmente, pero no quedará guardada si recargas.");
+ }
 }
 
 document.querySelectorAll("nav button").forEach(btn => {
@@ -1377,8 +1396,27 @@ function fillPrizeInputs(){
 }
 async function savePrizeSettings(){
  if(!isAdmin) return alert("Solo admin.");
- await setDoc(doc(db,"settings","prizes"),{entryFee:Number($("entryFeeInput")?.value||0),manualPool:$("manualPoolInput")?.value===""?"":Number($("manualPoolInput")?.value||0),firstPct:Number($("firstPctInput")?.value||0),secondPct:Number($("secondPctInput")?.value||0),thirdPct:Number($("thirdPctInput")?.value||0),updatedAt:serverTimestamp()});
- alert("Premios guardados ✅");
+ const payload = {
+   entryFee:Number($("entryFeeInput")?.value||0),
+   manualPool:$("manualPoolInput")?.value===""?"":Number($("manualPoolInput")?.value||0),
+   firstPct:Number($("firstPctInput")?.value||0),
+   secondPct:Number($("secondPctInput")?.value||0),
+   thirdPct:Number($("thirdPctInput")?.value||0),
+   updatedAt:serverTimestamp()
+ };
+
+ // Actualiza inmediatamente la pantalla, incluso antes de que Firebase responda.
+ prizeSettings = {...prizeSettings, ...payload};
+ renderPrizeStats();
+ fillPrizeInputs();
+
+ try{
+   await setDoc(doc(db,"settings","prizes"), payload);
+   alert("Premios guardados ✅");
+ }catch(e){
+   console.error(e);
+   alert("No se pudieron guardar los premios en Firebase. Revisa que Firestore Rules tenga permisos para /settings. La vista se actualizó temporalmente, pero no quedará guardada si recargas.");
+ }
 }
 
 document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
