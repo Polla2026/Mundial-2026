@@ -23,6 +23,10 @@ let matches = [];
 let predictions = [];
 let isAdmin = false;
 let prizeSettings = {entryFee:0, manualPool:"", firstPct:70, secondPct:20, thirdPct:10};
+try{
+  const prizeBackup = JSON.parse(localStorage.getItem("loquito_prize_settings_backup") || "null");
+  if(prizeBackup) prizeSettings = {...prizeSettings, ...prizeBackup};
+}catch(e){}
 let showUpcomingOnly = false;
 let predictionDrafts = {};
 
@@ -916,8 +920,14 @@ async function savePrizeSettings(){
    updatedAt:serverTimestamp()
  };
 
- // Actualiza inmediatamente la pantalla, incluso antes de que Firebase responda.
  prizeSettings = {...prizeSettings, ...payload};
+ localStorage.setItem("loquito_prize_settings_backup", JSON.stringify({
+   entryFee: payload.entryFee,
+   manualPool: payload.manualPool,
+   firstPct: payload.firstPct,
+   secondPct: payload.secondPct,
+   thirdPct: payload.thirdPct
+ }));
  renderPrizeStats();
  fillPrizeInputs();
 
@@ -926,7 +936,7 @@ async function savePrizeSettings(){
    alert("Premios guardados ✅");
  }catch(e){
    console.error(e);
-   alert("No se pudieron guardar los premios en Firebase. Revisa que Firestore Rules tenga permisos para /settings. La vista se actualizó temporalmente, pero no quedará guardada si recargas.");
+   alert("No se pudieron guardar los premios en Firebase. Revisa Firestore Rules para /settings. Quedó guardado temporalmente en este navegador, pero no en la nube.");
  }
 }
 
@@ -1405,8 +1415,14 @@ async function savePrizeSettings(){
    updatedAt:serverTimestamp()
  };
 
- // Actualiza inmediatamente la pantalla, incluso antes de que Firebase responda.
  prizeSettings = {...prizeSettings, ...payload};
+ localStorage.setItem("loquito_prize_settings_backup", JSON.stringify({
+   entryFee: payload.entryFee,
+   manualPool: payload.manualPool,
+   firstPct: payload.firstPct,
+   secondPct: payload.secondPct,
+   thirdPct: payload.thirdPct
+ }));
  renderPrizeStats();
  fillPrizeInputs();
 
@@ -1415,7 +1431,7 @@ async function savePrizeSettings(){
    alert("Premios guardados ✅");
  }catch(e){
    console.error(e);
-   alert("No se pudieron guardar los premios en Firebase. Revisa que Firestore Rules tenga permisos para /settings. La vista se actualizó temporalmente, pero no quedará guardada si recargas.");
+   alert("No se pudieron guardar los premios en Firebase. Revisa Firestore Rules para /settings. Quedó guardado temporalmente en este navegador, pero no en la nube.");
  }
 }
 
@@ -1556,3 +1572,12 @@ onSnapshot(collection(db,"predictions"), snap => {
   predictions = snap.docs.map(d=>({id:d.id, ...d.data()}));
   renderAll();
 });
+
+onSnapshot(doc(db,"settings","prizes"), snap => {
+  if(snap.exists()){
+    prizeSettings = {...prizeSettings, ...snap.data()};
+  }
+  renderPrizeStats();
+  fillPrizeInputs();
+});
+
