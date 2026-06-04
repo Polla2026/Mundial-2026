@@ -718,3 +718,10 @@ button.danger{border-color:#e05252;color:#b42323;background:#fff}
 button.danger:hover{background:#fff0f0}
 button.strongDanger{background:#b42323;color:white;border-color:#b42323}
 button.strongDanger:hover{background:#8f1d1d;color:white}
+
+.rulesGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.rulesGrid div,.prizeCard{background:white;border:1px solid #d8e0ef;border-radius:14px;padding:12px}
+.rulesGrid strong{display:block;font-size:22px;color:#0b5ed7}.rulesGrid span{color:#52627a}
+.prizeStatsBox{background:linear-gradient(135deg,#fff8db,#fff);border:1px solid #f1d27a;border-radius:18px;padding:16px;margin:14px 0 18px}
+.prizeGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:10px}
+.prizeCard .amount{font-size:24px;font-weight:900;color:#0b5ed7}

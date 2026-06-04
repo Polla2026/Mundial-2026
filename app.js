@@ -22,6 +22,7 @@ let participants = [];
 let matches = [];
 let predictions = [];
 let isAdmin = false;
+let prizeSettings = {entryFee:0, manualPool:"", firstPct:70, secondPct:20, thirdPct:10};
 let showUpcomingOnly = false;
 let predictionDrafts = {};
 
@@ -664,6 +665,8 @@ function renderStats(){
   renderTournamentStats();
   renderTopRankingCards();
   renderParticipantStatsTable();
+  renderPrizeStats();
+  fillPrizeInputs();
 }
 
 
@@ -881,6 +884,33 @@ async function resetTestData(){
   alert(`Reset listo ✅\nApuestas borradas: ${p}\nParticipantes borrados: ${u}\nResultados limpiados: ${played.length}`);
 }
 
+
+function money(value){return Number(value||0).toLocaleString("es-CL",{style:"currency",currency:"CLP",maximumFractionDigits:0});}
+function effectivePrizePool(){const manual=Number(prizeSettings.manualPool||0);return manual>0?manual:participants.length*Number(prizeSettings.entryFee||0);}
+function rankedParticipants(){return participants.map(p=>({...p,...participantDetailedStats(p.id)})).sort((a,b)=>b.points-a.points||b.exact-a.exact||a.name.localeCompare(b.name));}
+function renderPrizeStats(){
+ const boxes = [$("prizeStatsBox"), $("prizeRankingBox")].filter(Boolean);
+ if(!boxes.length) return;
+ const pool=effectivePrizePool(), ranking=rankedParticipants();
+ const prizes=[["🥇 1° lugar",Number(prizeSettings.firstPct||0),ranking[0]?.name||"Por definir"],["🥈 2° lugar",Number(prizeSettings.secondPct||0),ranking[1]?.name||"Por definir"],["🥉 3° lugar",Number(prizeSettings.thirdPct||0),ranking[2]?.name||"Por definir"]];
+ const sum=prizes.reduce((a,p)=>a+p[1],0);
+ const html=`<h3>💰 Premios / Pozo</h3><p><strong>Pozo actual:</strong> ${money(pool)} <span class="muted">· Participantes: ${participants.length} · Aporte: ${money(prizeSettings.entryFee||0)} ${Number(prizeSettings.manualPool||0)>0?"· Pozo manual activo":""}</span></p><div class="prizeGrid">${prizes.map(p=>`<div class="prizeCard"><div class="muted">${p[0]} · ${p[1]}%</div><strong>${esc(p[2])}</strong><div class="amount">${money(pool*p[1]/100)}</div></div>`).join("")}</div><p class="muted">Suma porcentajes configurados: ${sum}%.</p>`;
+ boxes.forEach(box => box.innerHTML = html);
+}
+function fillPrizeInputs(){
+ if(!$("entryFeeInput")) return;
+ $("entryFeeInput").value=prizeSettings.entryFee??0;
+ $("manualPoolInput").value=prizeSettings.manualPool??"";
+ $("firstPctInput").value=prizeSettings.firstPct??70;
+ $("secondPctInput").value=prizeSettings.secondPct??20;
+ $("thirdPctInput").value=prizeSettings.thirdPct??10;
+}
+async function savePrizeSettings(){
+ if(!isAdmin) return alert("Solo admin.");
+ await setDoc(doc(db,"settings","prizes"),{entryFee:Number($("entryFeeInput")?.value||0),manualPool:$("manualPoolInput")?.value===""?"":Number($("manualPoolInput")?.value||0),firstPct:Number($("firstPctInput")?.value||0),secondPct:Number($("secondPctInput")?.value||0),thirdPct:Number($("thirdPctInput")?.value||0),updatedAt:serverTimestamp()});
+ alert("Premios guardados ✅");
+}
+
 document.querySelectorAll("nav button").forEach(btn => {
   btn.addEventListener("click", () => {
     
@@ -1052,6 +1082,7 @@ function renderStats(){
   renderLastHitBox();
   renderTournamentStats();
   renderParticipantStatsTable();
+  renderPrizeStats();
 }
 
 
@@ -1323,6 +1354,33 @@ async function resetTestData(){
   alert(`Reset listo ✅\nApuestas borradas: ${p}\nParticipantes borrados: ${u}\nResultados limpiados: ${played.length}`);
 }
 
+
+function money(value){return Number(value||0).toLocaleString("es-CL",{style:"currency",currency:"CLP",maximumFractionDigits:0});}
+function effectivePrizePool(){const manual=Number(prizeSettings.manualPool||0);return manual>0?manual:participants.length*Number(prizeSettings.entryFee||0);}
+function rankedParticipants(){return participants.map(p=>({...p,...participantDetailedStats(p.id)})).sort((a,b)=>b.points-a.points||b.exact-a.exact||a.name.localeCompare(b.name));}
+function renderPrizeStats(){
+ const boxes = [$("prizeStatsBox"), $("prizeRankingBox")].filter(Boolean);
+ if(!boxes.length) return;
+ const pool=effectivePrizePool(), ranking=rankedParticipants();
+ const prizes=[["🥇 1° lugar",Number(prizeSettings.firstPct||0),ranking[0]?.name||"Por definir"],["🥈 2° lugar",Number(prizeSettings.secondPct||0),ranking[1]?.name||"Por definir"],["🥉 3° lugar",Number(prizeSettings.thirdPct||0),ranking[2]?.name||"Por definir"]];
+ const sum=prizes.reduce((a,p)=>a+p[1],0);
+ const html=`<h3>💰 Premios / Pozo</h3><p><strong>Pozo actual:</strong> ${money(pool)} <span class="muted">· Participantes: ${participants.length} · Aporte: ${money(prizeSettings.entryFee||0)} ${Number(prizeSettings.manualPool||0)>0?"· Pozo manual activo":""}</span></p><div class="prizeGrid">${prizes.map(p=>`<div class="prizeCard"><div class="muted">${p[0]} · ${p[1]}%</div><strong>${esc(p[2])}</strong><div class="amount">${money(pool*p[1]/100)}</div></div>`).join("")}</div><p class="muted">Suma porcentajes configurados: ${sum}%.</p>`;
+ boxes.forEach(box => box.innerHTML = html);
+}
+function fillPrizeInputs(){
+ if(!$("entryFeeInput")) return;
+ $("entryFeeInput").value=prizeSettings.entryFee??0;
+ $("manualPoolInput").value=prizeSettings.manualPool??"";
+ $("firstPctInput").value=prizeSettings.firstPct??70;
+ $("secondPctInput").value=prizeSettings.secondPct??20;
+ $("thirdPctInput").value=prizeSettings.thirdPct??10;
+}
+async function savePrizeSettings(){
+ if(!isAdmin) return alert("Solo admin.");
+ await setDoc(doc(db,"settings","prizes"),{entryFee:Number($("entryFeeInput")?.value||0),manualPool:$("manualPoolInput")?.value===""?"":Number($("manualPoolInput")?.value||0),firstPct:Number($("firstPctInput")?.value||0),secondPct:Number($("secondPctInput")?.value||0),thirdPct:Number($("thirdPctInput")?.value||0),updatedAt:serverTimestamp()});
+ alert("Premios guardados ✅");
+}
+
 document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
     document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
     btn.classList.add("active");
@@ -1435,6 +1493,8 @@ $("clearParticipantsBtn")?.addEventListener("click", clearParticipants);
 $("clearResultsBtn")?.addEventListener("click", clearResults);
 $("clearParticipantsPredictionsBtn")?.addEventListener("click", clearParticipantsAndPredictions);
 $("resetTestDataBtn")?.addEventListener("click", resetTestData);
+
+$("savePrizeSettingsBtn")?.addEventListener("click", savePrizeSettings);
 
 onAuthStateChanged(auth, user => {
   isAdmin = !!user && user.email === ADMIN_EMAIL;
