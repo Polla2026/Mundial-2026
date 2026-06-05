@@ -294,21 +294,27 @@ function renderMatches(){
 }
 function renderPredictions(){
   fillPredictionViewerFilters();
+
   const body = $("predictionsBody");
   if(!body) return;
+
   const rows = filteredPredictionsForViewer().slice().sort((a,b)=>{
-    const ma=matches.find(m=>m.id===a.matchId), mb=matches.find(m=>m.id===b.matchId);
-    const pa=participants.find(p=>p.id===a.participantId), pb=participants.find(p=>p.id===b.participantId);
-    return (ma?.matchNumber||999)-(mb?.matchNumber||999) || (pa?.name||"").localeCompare(pb?.name||"");
+    const ma = matches.find(m => m.id === a.matchId);
+    const mb = matches.find(m => m.id === b.matchId);
+    const pa = participants.find(p => p.id === a.participantId);
+    const pb = participants.find(p => p.id === b.participantId);
+    return (ma?.matchNumber || 999) - (mb?.matchNumber || 999) || (pa?.name || "").localeCompare(pb?.name || "");
   });
+
   if(!rows.length){
-    const mode=$("predictionViewMode")?.value || "match";
-    body.innerHTML = `<tr><td colspan="5" class="muted">${mode==="match" ? "No hay apuestas cargadas para este partido." : "No hay apuestas cargadas para este participante."}</td></tr>`;
+    const mode = $("predictionViewMode")?.value || "match";
+    body.innerHTML = `<tr><td colspan="5" class="muted">${mode === "match" ? "No hay apuestas cargadas para este partido." : "No hay apuestas cargadas para este participante."}</td></tr>`;
     return;
   }
-  body.innerHTML = rows.map(p=>{
-    const user=participants.find(x=>x.id===p.participantId);
-    const m=matches.find(x=>x.id===p.matchId);
+
+  body.innerHTML = rows.map(p => {
+    const user = participants.find(x => x.id === p.participantId);
+    const m = matches.find(x => x.id === p.matchId);
     return `<tr>
       <td>${esc(user?.name || "")}</td>
       <td>${m ? matchLabel(m) : ""}</td>
@@ -317,6 +323,85 @@ function renderPredictions(){
       <td><strong>${m ? pointsFor(p,m) : 0}</strong></td>
     </tr>`;
   }).join("");
+}
+
+function renderBulkPredictions(){
+  const body = $("bulkPredictionsBody");
+  if(!body) return;
+
+  const pid = currentBulkParticipantId();
+  const existing = Object.fromEntries(
+    predictions.filter(p => p.participantId === pid).map(p => [p.matchId, p])
+  );
+
+  body.innerHTML = matches.slice()
+    .sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999))
+    .map(m => {
+      const p = existing[m.id] || {};
+      const valA = predictionDrafts[draftKey(pid,m.id,"A")] ?? p.goalsA ?? "";
+      const valB = predictionDrafts[draftKey(pid,m.id,"B")] ?? p.goalsB ?? "";
+
+      return `<tr>
+        <td>${m.matchNumber ?? ""}</td>
+        <td><span class="chip">${esc(m.group||"")}</span></td>
+        <td>${matchLabel(m)}</td>
+        <td>${localDate(m.utc)}</td>
+        <td>
+          <div class="predScore">
+            <input type="number" min="0" value="${valA}" placeholder="A" data-bulk-a="${m.id}">
+            <span class="smallVs">-</span>
+            <input type="number" min="0" value="${valB}" placeholder="B" data-bulk-b="${m.id}">
+          </div>
+        </td>
+        <td>
+          <button type="button" class="rowSaveBtn" data-save-pred="${m.id}">Guardar</button>
+          <span class="savedHint" data-saved-hint="${m.id}"></span>
+        </td>
+      </tr>`;
+    }).join("");
+
+  document.querySelectorAll("[data-bulk-a]").forEach(input => {
+    input.addEventListener("input", () => {
+      predictionDrafts[draftKey(pid, input.dataset.bulkA, "A")] = input.value;
+    });
+  });
+  document.querySelectorAll("[data-bulk-b]").forEach(input => {
+    input.addEventListener("input", () => {
+      predictionDrafts[draftKey(pid, input.dataset.bulkB, "B")] = input.value;
+    });
+  });
+
+  document.querySelectorAll("[data-save-pred]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if(!isAdmin) return alert("Solo admin.");
+
+      const participantId = currentBulkParticipantId();
+      const matchId = btn.dataset.savePred;
+      const a = document.querySelector(`[data-bulk-a="${matchId}"]`)?.value.trim() ?? "";
+      const b = document.querySelector(`[data-bulk-b="${matchId}"]`)?.value.trim() ?? "";
+
+      if(a === "" || b === ""){
+        return alert("Completa ambos marcadores antes de guardar esta apuesta.");
+      }
+
+      predictionDrafts[draftKey(participantId,matchId,"A")] = a;
+      predictionDrafts[draftKey(participantId,matchId,"B")] = b;
+
+      await setDoc(doc(db,"predictions",`${participantId}_${matchId}`), {
+        participantId,
+        matchId,
+        goalsA:a,
+        goalsB:b,
+        updatedAt:serverTimestamp()
+      });
+
+      const hint = document.querySelector(`[data-saved-hint="${matchId}"]`);
+      if(hint){
+        hint.textContent = "✓ guardado";
+        setTimeout(() => hint.textContent = "", 1800);
+      }
+    });
+  });
 }
 function renderTeams(){
   const teams = {};
@@ -876,32 +961,54 @@ async function savePrizeSettings(){
 
 function nextUpcomingMatchForFilter(){
   const now = new Date();
-  const future = matches.filter(m => m.utc && new Date(m.utc) >= now).sort((a,b)=>new Date(a.utc)-new Date(b.utc))[0];
+  const future = matches
+    .filter(m => m.utc && new Date(m.utc) >= now)
+    .sort((a,b)=>new Date(a.utc)-new Date(b.utc))[0];
   return future || matches.slice().sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999))[0];
 }
 function fillPredictionViewerFilters(){
-  const mode=$("predictionViewMode"), matchSel=$("predictionMatchFilter"), participantSel=$("predictionParticipantFilter");
+  const mode = $("predictionViewMode");
+  const matchSel = $("predictionMatchFilter");
+  const participantSel = $("predictionParticipantFilter");
   if(!mode || !matchSel || !participantSel) return;
-  const oldMatch=matchSel.value, oldParticipant=participantSel.value;
-  const sortedMatches=matches.slice().sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999));
-  matchSel.innerHTML=sortedMatches.map(m=>`<option value="${m.id}">#${m.matchNumber ?? ""} · ${esc(m.teamA)} vs ${esc(m.teamB)} · ${localDate(m.utc)}</option>`).join("");
-  participantSel.innerHTML=participants.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");
-  if(oldMatch && sortedMatches.some(m=>m.id===oldMatch)) matchSel.value=oldMatch;
-  else { const next=nextUpcomingMatchForFilter(); if(next) matchSel.value=next.id; }
-  if(oldParticipant && participants.some(p=>p.id===oldParticipant)) participantSel.value=oldParticipant;
-  else if(participants[0]) participantSel.value=participants[0].id;
-  const isMatchMode = mode.value !== "participant";
-  matchSel.style.display = isMatchMode ? "" : "none";
-  participantSel.style.display = isMatchMode ? "none" : "";
+
+  const previousMatch = matchSel.value;
+  const previousParticipant = participantSel.value;
+
+  const sortedMatches = matches.slice().sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999));
+  matchSel.innerHTML = sortedMatches.map(m =>
+    `<option value="${m.id}">#${m.matchNumber ?? ""} · ${esc(m.teamA)} vs ${esc(m.teamB)} · ${localDate(m.utc)}</option>`
+  ).join("");
+
+  participantSel.innerHTML = participants.map(p =>
+    `<option value="${p.id}">${esc(p.name)}</option>`
+  ).join("");
+
+  if(previousMatch && sortedMatches.some(m => m.id === previousMatch)){
+    matchSel.value = previousMatch;
+  }else{
+    const next = nextUpcomingMatchForFilter();
+    if(next) matchSel.value = next.id;
+  }
+
+  if(previousParticipant && participants.some(p => p.id === previousParticipant)){
+    participantSel.value = previousParticipant;
+  }else if(participants[0]){
+    participantSel.value = participants[0].id;
+  }
+
+  const byMatch = mode.value !== "participant";
+  matchSel.style.display = byMatch ? "" : "none";
+  participantSel.style.display = byMatch ? "none" : "";
 }
 function filteredPredictionsForViewer(){
-  const mode=$("predictionViewMode")?.value || "match";
-  if(mode==="participant"){
-    const pid=$("predictionParticipantFilter")?.value || participants[0]?.id || "";
-    return predictions.filter(p=>p.participantId===pid);
+  const mode = $("predictionViewMode")?.value || "match";
+  if(mode === "participant"){
+    const pid = $("predictionParticipantFilter")?.value || participants[0]?.id || "";
+    return predictions.filter(p => p.participantId === pid);
   }
-  const mid=$("predictionMatchFilter")?.value || nextUpcomingMatchForFilter()?.id || "";
-  return predictions.filter(p=>p.matchId===mid);
+  const mid = $("predictionMatchFilter")?.value || nextUpcomingMatchForFilter()?.id || "";
+  return predictions.filter(p => p.matchId === mid);
 }
 
 document.querySelectorAll("nav button").forEach(btn => {
@@ -1402,32 +1509,54 @@ async function savePrizeSettings(){
 
 function nextUpcomingMatchForFilter(){
   const now = new Date();
-  const future = matches.filter(m => m.utc && new Date(m.utc) >= now).sort((a,b)=>new Date(a.utc)-new Date(b.utc))[0];
+  const future = matches
+    .filter(m => m.utc && new Date(m.utc) >= now)
+    .sort((a,b)=>new Date(a.utc)-new Date(b.utc))[0];
   return future || matches.slice().sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999))[0];
 }
 function fillPredictionViewerFilters(){
-  const mode=$("predictionViewMode"), matchSel=$("predictionMatchFilter"), participantSel=$("predictionParticipantFilter");
+  const mode = $("predictionViewMode");
+  const matchSel = $("predictionMatchFilter");
+  const participantSel = $("predictionParticipantFilter");
   if(!mode || !matchSel || !participantSel) return;
-  const oldMatch=matchSel.value, oldParticipant=participantSel.value;
-  const sortedMatches=matches.slice().sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999));
-  matchSel.innerHTML=sortedMatches.map(m=>`<option value="${m.id}">#${m.matchNumber ?? ""} · ${esc(m.teamA)} vs ${esc(m.teamB)} · ${localDate(m.utc)}</option>`).join("");
-  participantSel.innerHTML=participants.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");
-  if(oldMatch && sortedMatches.some(m=>m.id===oldMatch)) matchSel.value=oldMatch;
-  else { const next=nextUpcomingMatchForFilter(); if(next) matchSel.value=next.id; }
-  if(oldParticipant && participants.some(p=>p.id===oldParticipant)) participantSel.value=oldParticipant;
-  else if(participants[0]) participantSel.value=participants[0].id;
-  const isMatchMode = mode.value !== "participant";
-  matchSel.style.display = isMatchMode ? "" : "none";
-  participantSel.style.display = isMatchMode ? "none" : "";
+
+  const previousMatch = matchSel.value;
+  const previousParticipant = participantSel.value;
+
+  const sortedMatches = matches.slice().sort((a,b)=>(a.matchNumber||999)-(b.matchNumber||999));
+  matchSel.innerHTML = sortedMatches.map(m =>
+    `<option value="${m.id}">#${m.matchNumber ?? ""} · ${esc(m.teamA)} vs ${esc(m.teamB)} · ${localDate(m.utc)}</option>`
+  ).join("");
+
+  participantSel.innerHTML = participants.map(p =>
+    `<option value="${p.id}">${esc(p.name)}</option>`
+  ).join("");
+
+  if(previousMatch && sortedMatches.some(m => m.id === previousMatch)){
+    matchSel.value = previousMatch;
+  }else{
+    const next = nextUpcomingMatchForFilter();
+    if(next) matchSel.value = next.id;
+  }
+
+  if(previousParticipant && participants.some(p => p.id === previousParticipant)){
+    participantSel.value = previousParticipant;
+  }else if(participants[0]){
+    participantSel.value = participants[0].id;
+  }
+
+  const byMatch = mode.value !== "participant";
+  matchSel.style.display = byMatch ? "" : "none";
+  participantSel.style.display = byMatch ? "none" : "";
 }
 function filteredPredictionsForViewer(){
-  const mode=$("predictionViewMode")?.value || "match";
-  if(mode==="participant"){
-    const pid=$("predictionParticipantFilter")?.value || participants[0]?.id || "";
-    return predictions.filter(p=>p.participantId===pid);
+  const mode = $("predictionViewMode")?.value || "match";
+  if(mode === "participant"){
+    const pid = $("predictionParticipantFilter")?.value || participants[0]?.id || "";
+    return predictions.filter(p => p.participantId === pid);
   }
-  const mid=$("predictionMatchFilter")?.value || nextUpcomingMatchForFilter()?.id || "";
-  return predictions.filter(p=>p.matchId===mid);
+  const mid = $("predictionMatchFilter")?.value || nextUpcomingMatchForFilter()?.id || "";
+  return predictions.filter(p => p.matchId === mid);
 }
 
 document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
@@ -1546,7 +1675,10 @@ $("resetTestDataBtn")?.addEventListener("click", resetTestData);
 $("savePrizeSettingsBtn")?.addEventListener("click", savePrizeSettings);
 
 
-$("predictionViewMode")?.addEventListener("change", () => { fillPredictionViewerFilters(); renderPredictions(); });
+$("predictionViewMode")?.addEventListener("change", () => {
+  fillPredictionViewerFilters();
+  renderPredictions();
+});
 $("predictionMatchFilter")?.addEventListener("change", renderPredictions);
 $("predictionParticipantFilter")?.addEventListener("change", renderPredictions);
 
