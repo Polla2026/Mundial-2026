@@ -104,14 +104,20 @@
       </div>
     </div>
 
-    <div class="card">
-      <h3>👀 Ver apuestas cargadas</h3>
-      <div class="formline">
-        <select id="viewParticipant"></select>
-      </div>
-    </div>
-
-    <table>
+    
+<div class="card predictionViewerFilters">
+  <h3>👀 Ver apuestas cargadas</h3>
+  <p>Para evitar tablas eternas, revisa apuestas por partido o por participante.</p>
+  <div class="grid">
+    <select id="predictionViewMode">
+      <option value="match">Ver por partido</option>
+      <option value="participant">Ver por participante</option>
+    </select>
+    <select id="predictionMatchFilter"></select>
+    <select id="predictionParticipantFilter"></select>
+  </div>
+</div>
+<table>
       <thead><tr><th>Participante</th><th>Partido</th><th>Fecha</th><th>Predicción</th><th>Puntos</th></tr></thead>
       <tbody id="predictionsBody"></tbody>
     </table>
@@ -266,6 +272,6 @@
   <small>Horarios en Chile · Fechas ajustadas a America/Santiago.</small>
 </footer>
 
-<script type="module" src="app.js?v=28"></script>
+<script type="module" src="app.js?v=29"></script>
 </body>
 </html>
