@@ -969,3 +969,27 @@ body.isAdmin th.adminOnly, body.isAdmin td.adminOnly{display:table-cell}
   .flagBracketMain{grid-template-columns:1fr;min-width:720px}
   .flagFinalCenter{order:-1}
 }
+
+.lateOverrideBox{
+  border:1px solid #f1d27a;
+  background:#fff8db;
+  border-radius:12px;
+  padding:12px;
+  margin:10px 0 14px;
+}
+.lateOverrideBox label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  color:#8a5a00;
+}
+.lateOverrideBox input{
+  width:auto;
+  min-height:auto;
+}
+
+.hitPill.onePoint{
+  background:#edf4ff;
+  color:#0b5ed7;
+}

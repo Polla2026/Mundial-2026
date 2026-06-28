@@ -69,3 +69,34 @@ CAMBIO v2.3:
 - Se agrega carga rápida desde texto/WhatsApp.
 - Se refuerza actualización de datos tras agregar participantes, apuestas y resultados.
 - Se mantiene reducción de lecturas: los datos se cargan de forma puntual.
+
+
+CAMBIO v2.4:
+- Corrige/fortalece botón Admin y muestra estado del correo conectado.
+- Agrega alertas claras si Firestore Rules bloquea escrituras.
+- Agrega botón “Sincronizar desde fase de grupos” para construir segunda fase según las llaves ya definidas en la primera página.
+- Agrega editor manual de partidos de segunda fase.
+
+
+CAMBIO v2.5:
+- Segunda Fase incorpora pestaña Llaves visuales.
+- La llave se puede editar haciendo clic en cada partido.
+- Se mantiene sincronización desde Fase de Grupos para copiar los cruces ya definidos.
+- La llave visual se conecta con partidos, apuestas y resultados de Segunda Fase.
+
+
+CAMBIO v2.6:
+- Se agrega modo admin “Permitir carga extraordinaria de apuestas cerradas”.
+- La regla normal de cierre 15 minutos antes se mantiene.
+- Solo el admin puede activar la carga posteriori para casos excepcionales.
+- Aplica para carga manual, guardar todas, CSV y texto/WhatsApp.
+
+
+CAMBIO v2.7 RELEASE:
+- Segunda Fase usa puntaje 3/1/0:
+  * 3 puntos por resultado exacto.
+  * 1 punto por ganador correcto o empate correcto.
+  * 0 puntos por pronóstico incorrecto o no apostado.
+- Estadísticas separan exactos y ganador/empate.
+- Desempate: puntos, exactos, ganador/empate y orden alfabético.
+- Mantiene carga extraordinaria admin de v2.6.
