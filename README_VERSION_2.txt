@@ -100,3 +100,9 @@ CAMBIO v2.7 RELEASE:
 - Estadísticas separan exactos y ganador/empate.
 - Desempate: puntos, exactos, ganador/empate y orden alfabético.
 - Mantiene carga extraordinaria admin de v2.6.
+
+
+CAMBIO v2.8 EMERGENCIA:
+- Corrección directa: si estás como admin, puedes guardar apuestas de partidos cerrados.
+- Mantiene puntaje 3/1/0.
+- Mantiene regla visual de cierre para operación normal.

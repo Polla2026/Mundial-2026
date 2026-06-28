@@ -85,7 +85,9 @@ function closeDate(utc){
 }
 
 function allowLateBets(){
-  return isAdmin && !!$("allowLateBetsToggle")?.checked;
+  // Emergency override: admin can load closed bets.
+  // The checkbox is visual/control guidance, but admin is never blocked.
+  return isAdmin || !!$("allowLateBetsToggle")?.checked;
 }
 function canEditPredictionForMatch(m){
   return isBetOpen(m) || allowLateBets();
@@ -730,7 +732,7 @@ async function addParticipant(){
 async function saveOnePrediction(pid,mid){
   if(!isAdmin) return alert("Solo admin.");
   const m = matches.find(x=>x.id===mid);
-  if(!canEditPredictionForMatch(m)) return alert("Este partido ya está cerrado para apuestas. Para caso excepcional, activa “Permitir carga extraordinaria de apuestas cerradas”.");
+  if(!canEditPredictionForMatch(m)) return alert("Este partido ya está cerrado para apuestas.");
   const a = document.querySelector(`[data-bulk-a="${mid}"]`)?.value.trim();
   const b = document.querySelector(`[data-bulk-b="${mid}"]`)?.value.trim();
   if(a==="" || b==="") return alert("Completa ambos marcadores.");
