@@ -110,17 +110,54 @@ function money(v){
   return Number(v||0).toLocaleString("es-CL",{style:"currency",currency:"CLP",maximumFractionDigits:0});
 }
 
+function cleanScoreValue(v){
+  if(v === "" || v == null) return null;
+  const n = Number(String(v).trim());
+  return Number.isFinite(n) ? n : null;
+}
+function predictionScore(pred, side){
+  if(!pred) return null;
+  const keys = side === "A"
+    ? ["goalsA", "scoreA", "predA", "predictionA", "homeGoals", "teamAScore"]
+    : ["goalsB", "scoreB", "predB", "predictionB", "awayGoals", "teamBScore"];
+  for(const key of keys){
+    const value = cleanScoreValue(pred[key]);
+    if(value !== null) return value;
+  }
+  return null;
+}
+function matchScore(match, side){
+  if(!match) return null;
+  const keys = side === "A"
+    ? ["realA", "scoreA", "goalsA", "homeGoals", "teamAScore"]
+    : ["realB", "scoreB", "goalsB", "awayGoals", "teamBScore"];
+  for(const key of keys){
+    const value = cleanScoreValue(match[key]);
+    if(value !== null) return value;
+  }
+  return null;
+}
 function resultSign(a,b){
-  if(a === "" || b === "" || a == null || b == null) return null;
-  const diff = Number(a) - Number(b);
+  const na = cleanScoreValue(a);
+  const nb = cleanScoreValue(b);
+  if(na === null || nb === null) return null;
+  const diff = na - nb;
   if(diff > 0) return "A";
   if(diff < 0) return "B";
   return "E";
 }
 function pointsFor(pred,match){
-  if(!match || match.realA === "" || match.realB === "" || match.realA == null || match.realB == null) return 0;
-  if(Number(pred.goalsA) === Number(match.realA) && Number(pred.goalsB) === Number(match.realB)) return 3;
-  return resultSign(pred.goalsA,pred.goalsB) === resultSign(match.realA,match.realB) ? 1 : 0;
+  const predA = predictionScore(pred,"A");
+  const predB = predictionScore(pred,"B");
+  const realA = matchScore(match,"A");
+  const realB = matchScore(match,"B");
+  if(predA === null || predB === null || realA === null || realB === null) return 0;
+
+  if(predA === realA && predB === realB) return 3;
+
+  const predictedSign = resultSign(predA,predB);
+  const realSign = resultSign(realA,realB);
+  return predictedSign && predictedSign === realSign ? 1 : 0;
 }
 function exactPoints(pred,match){
   return pointsFor(pred,match) === 3 ? 3 : 0;
