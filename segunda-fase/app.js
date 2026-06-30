@@ -205,10 +205,37 @@ function statsRows(){
   return participants.map(p => ({...p, ...participantStats(p.id)}))
     .sort((a,b)=>b.points-a.points || b.exacts-a.exacts || b.winners-a.winners || a.name.localeCompare(b.name));
 }
+function timestampMillis(value){
+  if(!value) return null;
+  if(typeof value.toMillis === "function") return value.toMillis();
+  if(typeof value.seconds === "number") return value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1000000);
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+function matchUtcMillis(m){
+  if(!m?.utc) return null;
+  const parsed = new Date(m.utc).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+function lastResultSortValue(m){
+  const updated = timestampMillis(m?.resultUpdatedAt);
+  if(updated !== null) return {priority:2, value:updated};
+
+  // Fallback para resultados antiguos que fueron cargados antes de guardar resultUpdatedAt:
+  // se ordenan por fecha del partido, no por número correlativo.
+  const byDate = matchUtcMillis(m);
+  if(byDate !== null) return {priority:1, value:byDate};
+
+  return {priority:0, value:Number(m?.matchNumber || 0)};
+}
 function lastPlayedMatch(){
   return matches
-    .filter(m => m.realA !== "" && m.realB !== "" && m.realA != null && m.realB != null)
-    .sort((a,b)=>(b.matchNumber||0)-(a.matchNumber||0))[0];
+    .filter(hasResult)
+    .sort((a,b)=>{
+      const aa = lastResultSortValue(a);
+      const bb = lastResultSortValue(b);
+      return bb.priority - aa.priority || bb.value - aa.value;
+    })[0];
 }
 
 function hasResult(m){
@@ -616,7 +643,8 @@ function renderMatches(){
       const id = btn.dataset.saveResult;
       await updateDoc(doc(db,C.matches,id), {
         realA: document.querySelector(`[data-real-a="${id}"]`).value,
-        realB: document.querySelector(`[data-real-b="${id}"]`).value
+        realB: document.querySelector(`[data-real-b="${id}"]`).value,
+        resultUpdatedAt: serverTimestamp()
       });
       await refreshAfterWrite();
     };
@@ -624,7 +652,7 @@ function renderMatches(){
   document.querySelectorAll("[data-clear-result]").forEach(btn => {
     btn.onclick = async () => {
       if(!isAdmin) return;
-      await updateDoc(doc(db,C.matches,btn.dataset.clearResult), {realA:"", realB:""});
+      await updateDoc(doc(db,C.matches,btn.dataset.clearResult), {realA:"", realB:"", resultUpdatedAt:null});
       await refreshAfterWrite();
     };
   });
@@ -970,9 +998,9 @@ async function clearPredictions(){ if(isAdmin && requireReset()){ await clearCol
   alert("Apuestas borradas."); } }
 async function clearParticipants(){ if(isAdmin && requireReset()){ await clearCollection(C.participants,participants); await refreshAfterWrite();
   alert("Participantes borrados."); } }
-async function clearResults(){ if(isAdmin && requireReset()){ await Promise.all(matches.map(m=>updateDoc(doc(db,C.matches,m.id),{realA:"",realB:""}))); await refreshAfterWrite();
+async function clearResults(){ if(isAdmin && requireReset()){ await Promise.all(matches.map(m=>updateDoc(doc(db,C.matches,m.id),{realA:"",realB:"",resultUpdatedAt:null}))); await refreshAfterWrite();
   alert("Resultados limpiados."); } }
-async function resetAll(){ if(isAdmin && requireReset()){ await clearCollection(C.predictions,predictions); await clearCollection(C.participants,participants); await Promise.all(matches.map(m=>updateDoc(doc(db,C.matches,m.id),{realA:"",realB:""}))); await refreshAfterWrite();
+async function resetAll(){ if(isAdmin && requireReset()){ await clearCollection(C.predictions,predictions); await clearCollection(C.participants,participants); await Promise.all(matches.map(m=>updateDoc(doc(db,C.matches,m.id),{realA:"",realB:"",resultUpdatedAt:null}))); await refreshAfterWrite();
   alert("Reset segunda fase listo."); } }
 
 document.querySelectorAll("nav button").forEach(btn => {
