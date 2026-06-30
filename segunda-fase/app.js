@@ -210,6 +210,66 @@ function lastPlayedMatch(){
     .filter(m => m.realA !== "" && m.realB !== "" && m.realA != null && m.realB != null)
     .sort((a,b)=>(b.matchNumber||0)-(a.matchNumber||0))[0];
 }
+
+function hasResult(m){
+  return m && m.realA !== "" && m.realB !== "" && m.realA != null && m.realB != null;
+}
+function roundProgress(title, nums){
+  const total = nums.length;
+  const played = nums.map(n => getMatchByNumber(n)).filter(hasResult).length;
+  const pending = Math.max(0, total - played);
+  const pct = total ? Math.round((played / total) * 100) : 0;
+  return {title, played, total, pending, pct};
+}
+function koProgressRows(){
+  return [
+    roundProgress("16avos", KO_ROUNDS.r32),
+    roundProgress("Octavos", KO_ROUNDS.r16),
+    roundProgress("Cuartos", KO_ROUNDS.qf),
+    roundProgress("Semifinales", KO_ROUNDS.sf),
+    roundProgress("Tercer lugar", KO_ROUNDS.third),
+    roundProgress("Final", KO_ROUNDS.final)
+  ];
+}
+function renderClassificationSummary(){
+  const box = $("summaryCards");
+  if(!box) return;
+
+  const totalPreds = predictions.length;
+  const exacts = predictions.filter(p => {
+    const m = matches.find(x=>x.id===p.matchId);
+    return pointsFor(p,m) === 3;
+  }).length;
+  const winnerPreds = predictions.filter(p => {
+    const m = matches.find(x=>x.id===p.matchId);
+    return pointsFor(p,m) === 1;
+  }).length;
+  const totalMatches = matches.length;
+  const playedMatches = matches.filter(hasResult).length;
+  const pendingMatches = Math.max(0, totalMatches - playedMatches);
+  const last = lastPlayedMatch();
+  const rounds = koProgressRows();
+  const currentRound = rounds.find(r => r.played < r.total) || rounds[rounds.length - 1];
+  const currentPendingText = currentRound.pending > 0
+    ? `${currentRound.pending} pendientes`
+    : "ronda completada";
+
+  box.innerHTML = `
+    <div class="infoCard"><div class="muted">Participantes</div><strong>${participants.length}</strong><div>jugando segunda fase</div></div>
+    <div class="infoCard"><div class="muted">Apuestas cargadas</div><strong>${totalPreds}</strong><div>${exacts} exactos · ${winnerPreds} ganador/empate</div></div>
+    <div class="infoCard"><div class="muted">Partidos con resultado</div><strong>${playedMatches} de ${totalMatches}</strong><div>${pendingMatches} pendientes</div></div>
+    <div class="infoCard"><div class="muted">Último resultado cargado</div>${
+      last ? `<div>${matchLabel(last)}</div><div class="lastResultScore">${last.realA} - ${last.realB}</div>` : `<div>Aún no hay resultados cargados.</div>`
+    }</div>
+    <div class="infoCard classificationProgressCard">
+      <div class="muted">Ronda actual</div>
+      <strong>${esc(currentRound.title)}</strong>
+      <div>${currentRound.played} de ${currentRound.total} jugados</div>
+      <div class="muted">${currentPendingText}</div>
+      <div class="koProgressTrack"><i style="width:${currentRound.pct}%"></i></div>
+    </div>
+  `;
+}
 function renderStats(){
   const lastBox = $("lastHitBox");
   const statsBox = $("tournamentStats");
@@ -474,16 +534,7 @@ function renderRanking(){
     </div>
   `).join("");
 
-  const totalPreds = predictions.length;
-  const exacts = predictions.filter(p => {
-    const m = matches.find(x=>x.id===p.matchId);
-    return pointsFor(p,m) === 3;
-  }).length;
-  $("summaryCards").innerHTML = `
-    <div class="infoCard"><div class="muted">Participantes</div><strong>${participants.length}</strong></div>
-    <div class="infoCard"><div class="muted">Apuestas cargadas</div><strong>${totalPreds}</strong></div>
-    <div class="infoCard"><div class="muted">Exactos</div><strong>${exacts}</strong></div>
-  `;
+  renderClassificationSummary();
 }
 function renderPrize(){
   const pool = effectivePool();
